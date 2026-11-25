@@ -19,8 +19,8 @@ public class axonServoTest extends OpMode {
 
     @Override
     public void init() {
-        nectar = hardwareMap.get(Servo.class, "turretPollen");
-        nectarEncoder = hardwareMap.get(AnalogInput.class, "pollenEncoder");
+        nectar = hardwareMap.get(Servo.class, "turretNectar");
+        nectarEncoder = hardwareMap.get(AnalogInput.class, "nectarEncoder");
     }
 
     @Override

@@ -93,7 +93,7 @@ public class shootingRanging extends OpMode {
         }
         if(gamepad2.right_trigger > 0){
             sorter.setPower(-1);
-            intake .setPower(-1);
+            intake.setPower(-1);
         }
         if(gamepad2.right_trigger == 0 && gamepad2.left_trigger == 0){
             sorter.setPower(0);
@@ -108,8 +108,8 @@ public class shootingRanging extends OpMode {
         telemetry.addData("Kv: ", P_Kv_Ks[1]);
         telemetry.addData("Ks: ", P_Kv_Ks[2]);
         telemetry.addData("Currently Changing: ", strIndicator);
-        telemetry.addData("Target Velocity: ", "%.4f", targetVelocity);
-        telemetry.addData("Current Velocity: ", "%.4f", velocity);
+        telemetry.addData("Target Velocity: ",  targetVelocity);
+        telemetry.addData("Current Velocity: ",  velocity);
         telemetry.addData("Current Changing Velocity by: ", targetVelTable[Math.abs(velTableSteps%4)]);
         telemetry.addData("Pose: ", Arrays.toString(pose));
         telemetry.addData("Target Pose: ", Arrays.toString(targetPose));

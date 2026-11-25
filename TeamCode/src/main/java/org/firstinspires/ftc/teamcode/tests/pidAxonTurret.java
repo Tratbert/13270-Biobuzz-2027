@@ -13,10 +13,10 @@ public class pidAxonTurret extends OpMode {
 
     Servo nectarTurret;
     AnalogInput nectarEncoder;
-    double kp = 0.007;
-    double ki = 0.0021;
-    double kd = 0.0005;
-    double kFriction = 0;
+    double kp = 0.0071;
+    double ki = 0.0002;
+    double kd = 0;
+    double kFriction = 0.057;
     double integralSum = 0;
     double lastError = 0;
     double lastAngle = 0;
@@ -29,6 +29,28 @@ public class pidAxonTurret extends OpMode {
     double currentEstimate = 0;
 
 
+    double x = 48;
+    double y = 24;
+
+    double heading = 0;
+
+    double targetX = 57.5;
+    double targetY = 52.5;
+    double nectarX = x + 6.5*Math.cos(heading + Math.toRadians(222));
+    double nectarY = y + 6.5 * Math.sin(heading + Math.toRadians(222));
+
+    double xDiff = targetX-nectarX;
+    double yDiff = targetY-nectarY;
+
+
+    double targetAngleRad = Math.atan2(yDiff,xDiff);
+    double targetAngleDeg = Math.toDegrees(targetAngleRad)*-1 + 360;
+
+
+
+
+
+
 
     ElapsedTime timer = new ElapsedTime();
     ElapsedTime loopTimer = new ElapsedTime();
@@ -36,66 +58,57 @@ public class pidAxonTurret extends OpMode {
 
     @Override
     public void init() {
-        nectarTurret = hardwareMap.get(Servo.class, "turretPollen");
-        nectarEncoder = hardwareMap.get(AnalogInput.class, "pollenEncoder");
+        nectarTurret = hardwareMap.get(Servo.class, "turretNectar");
+        nectarEncoder = hardwareMap.get(AnalogInput.class, "nectarEncoder");
     }
 
 
     @Override
     public void loop() {
         loopTimer.reset();
-
-        if(gamepad1.rightBumperWasPressed()){
-            Step++;
+        if(targetAngleDeg < 0){
+            targetAngleDeg += 360;
         }
-        if(gamepad1.leftBumperWasPressed()){
-            Step--;
-        }
-        if(gamepad1.yWasPressed()){
-            kp += steps[Step%6];
-        }
-        if(gamepad1.aWasPressed()){
-            kp -= steps[Step%6];
-        }
-        if(gamepad1.dpadUpWasPressed()){
-            ki += steps[Step%6];
-        }
-        if(gamepad1.dpadDownWasPressed()){
-            ki -= steps[Step%6];
-        }
-        if(gamepad1.dpadRightWasPressed()){
-            kd += steps[Step%6];
-        }
-        if(gamepad1.dpadLeftWasPressed()){
-            kd -= steps[Step%6];
-        }
-        if(gamepad1.xWasPressed()){
-            kFriction += steps[Step%6];
-        }
-        if(gamepad1.bWasPressed()){
-            kFriction-= steps[Step%6];
-        }
-        telemetry.addData("ki: ", ki);
-        telemetry.addData("kp: ", kp);
-        telemetry.addData("kd ", kd);
-        telemetry.addData("a: ",a);
-        telemetry.addData("Step: ", Step);
-        telemetry.addData("Steps: ", steps[Step%6]);
+//        if(gamepad1.rightBumperWasPressed()){
+//            Step++;
+//        }
+//        if(gamepad1.leftBumperWasPressed()){
+//            Step--;
+//        }
+//        if(gamepad1.yWasPressed()){
+//            kp += steps[Step%6];
+//        }
+//        if(gamepad1.aWasPressed()){
+//            kp -= steps[Step%6];
+//        }
+//        if(gamepad1.dpadUpWasPressed()){
+//            ki += steps[Step%6];
+//        }
+//        if(gamepad1.dpadDownWasPressed()){
+//            ki -= steps[Step%6];
+//        }
+//        if(gamepad1.dpadRightWasPressed()){
+//            kd += steps[Step%6];
+//        }
+//        if(gamepad1.dpadLeftWasPressed()){
+//            kd -= steps[Step%6];
+//        }
+//        if(gamepad1.xWasPressed()){
+//            kFriction += steps[Step%6];
+//        }
+//        if(gamepad1.bWasPressed()){
+//            kFriction-= steps[Step%6];
+//        }
+//        telemetry.addData("ki: ", ki);
+//        telemetry.addData("kp: ", kp);
+//        telemetry.addData("kd ", kd);
+//        telemetry.addData("kFriction: ",kFriction);
+//        telemetry.addData("Step: ", Step);
+//        telemetry.addData("Steps: ", steps[Step%6]);
 
         double voltage = nectarEncoder.getVoltage();
 
-        double x = 72;
-        double y = 72;
 
-        double targetX = 96;
-        double targetY = 96;
-
-        double xDiff = targetX-x;
-        double yDiff = targetY-y;
-
-        double targetAngleRad = Math.atan2(yDiff,xDiff) - Math.PI;
-
-        double targetAngleDeg = 180;
 
         double angle = (voltage/3.300538)*360.0;
 
@@ -112,19 +125,22 @@ public class pidAxonTurret extends OpMode {
         if(integralSum < -maxIntegralSum){
             integralSum = -maxIntegralSum;
         }
-//        if(angle != lastAngle){
-//            integralSum = 0;
-//        }
+        if(angle != lastAngle){
+            integralSum = 0;
+        }
         double out = (kp*error) + (ki*integralSum) + (kd*derivitive);
         telemetry.addData("Out" , out);
         if(Math.abs(error) < 3){
             kFriction = 0;
+        } else {
+            kFriction = 0.057;
         }
+
 
         if(out < 0){
             out -= kFriction;
         }
-        if(out > 0){
+        if(out >= 0){
             out += kFriction;
         }
 
@@ -150,6 +166,7 @@ public class pidAxonTurret extends OpMode {
         telemetry.addData("Integral Sum: ", integralSum);
         telemetry.addData("Derivative: ", derivitive);
         telemetry.addData("Loop Timer: ", loopTimer.milliseconds());
+        telemetry.addData("Out: ", out);
         telemetry.update();
 
     }

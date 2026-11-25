@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode.opmodes;
 
 public class nectarPID {
 
-    double kP = 0.0007;
+    double kP = 0.0039;
     double  kV = 0.0003;
     double kS = 0.1;
 
