@@ -100,10 +100,15 @@ public class main extends OpMode {
 
     @Override
     public void loop() {
-        timer.reset();
         Pose robotPose = follower.pose();
         x = robotPose.x();
         y = robotPose.y();
+        if(y > 72){
+            targetY = 144-52.5;
+        }
+        if(y <= 72){
+            targetY = 52.5;
+        }
         heading = robotPose.heading();
         telemetry.addData("X: ", x);
         telemetry.addData("Y: ", y);
@@ -114,8 +119,9 @@ public class main extends OpMode {
         double nectarY = y + 6.5 * Math.sin(heading + Math.toRadians(222));
         double nectarXDiff = targetX-nectarX;
         double nectarYDiff = targetY-nectarY;
-        double nectarToGoalRad = Math.atan2(nectarYDiff,nectarXDiff);
-        double targetNectarAngle = Math.toDegrees(nectarToGoalRad)*-1 + 360;
+        double nectarToGoalRad = (Math.atan2(nectarYDiff,nectarXDiff)-heading);
+        nectarToGoalRad = (nectarToGoalRad % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+        double targetNectarAngle = (Math.toDegrees(nectarToGoalRad))*-1 + 360;
         if(targetNectarAngle < 0){
             targetNectarAngle +=360;
         }
@@ -161,20 +167,21 @@ public class main extends OpMode {
 
         nectarLastError = nectarError;
         nectarLastAngle = nectarAngle;
-        distanceToGoalPollen = Math.sqrt(Math.pow((57.5-pollenX), 2) + Math.pow((52.5-pollenY), 2));
-        distanceToGoalNectar = Math.sqrt(Math.pow((57.5-nectarX), 2) + Math.pow((52.5-nectarY), 2));
+        distanceToGoalPollen = Math.sqrt(Math.pow((57.5-pollenX), 2) + Math.pow((targetY-pollenY), 2));
+        distanceToGoalNectar = Math.sqrt(Math.pow((57.5-nectarX), 2) + Math.pow((targetY-nectarY), 2));
 
         telemetry.addData("Distance to Goal", Math.sqrt(Math.pow((57.5-x), 2) + Math.pow((52.5-y), 2)));
         pollenTargetVel= 0.181509 * distanceToGoalPollen * distanceToGoalPollen - 13.53937 * distanceToGoalPollen + 1750.40352;
         nectarTargetVel = -0.13977 * distanceToGoalNectar * distanceToGoalNectar + 17.31034 * distanceToGoalNectar + 1028.93977;
         double pollenXDiff = targetX-pollenX;
         double pollenYDiff = targetY-pollenY;
-        double pollenToGoalRad = Math.atan2(pollenYDiff,pollenXDiff);
-        double targetPollenAngle = Math.toDegrees(pollenToGoalRad)*-1 + 360;
+        double pollenToGoalRad = Math.atan2(pollenYDiff, pollenXDiff) - heading;
+        pollenToGoalRad = (pollenToGoalRad % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+        double targetPollenAngle = (Math.toDegrees(pollenToGoalRad))*-1 + 360;
         if(targetPollenAngle < 0){
             targetPollenAngle +=360;
         }
-        double pollenVoltage = nectarEncoder.getVoltage();
+        double pollenVoltage = pollenEncoder.getVoltage();
         double pollenAngle = (pollenVoltage /3.300538)*360.0;
         double pollenError = targetPollenAngle -pollenAngle;
         double pollenErrorChange = pollenError-pollenLastError;
@@ -194,7 +201,7 @@ public class main extends OpMode {
         if(Math.abs(pollenError) < 3){
             pollenkFriction = 0;
         } else {
-            pollenkFriction = 0.057;
+            pollenkFriction = 0.0450;
         }
 
 
@@ -218,8 +225,8 @@ public class main extends OpMode {
         pollenLastAngle = pollenAngle;
         follower.manual(
                 -gamepad1.left_stick_y,
-                gamepad1.left_stick_x,
-                gamepad1.right_stick_x
+                -gamepad1.left_stick_x,
+                -gamepad1.right_stick_x
         );
         follower.update();
 
