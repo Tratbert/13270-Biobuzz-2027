@@ -128,6 +128,7 @@ public class main extends OpMode {
         double nectarVoltage = nectarEncoder.getVoltage();
         double nectarAngle = (nectarVoltage/3.300538)*360.0;
         double nectarError = targetNectarAngle-nectarAngle;
+        telemetry.addData("Nectar error: ", nectarError);
         double nectarErrorChange = nectarError-nectarLastError;
         nectarCurrentEstimate = (nectarA*nectarPreviousEstimate) + (1-nectarA) * nectarErrorChange;
         nectarPreviousEstimate = nectarCurrentEstimate;
@@ -141,7 +142,7 @@ public class main extends OpMode {
         }
 
         double nectarOut = (nectarkP*nectarError) + (nectarkI*nectarIntegralSum) + (nectarkD* nectarDerivitive);
-        telemetry.addData("Out" , nectarOut);
+        telemetry.addData("Nectar Out" , nectarOut);
         if(Math.abs(nectarError) < 3){
             nectarkFriction = 0;
         } else {
@@ -184,6 +185,7 @@ public class main extends OpMode {
         double pollenVoltage = pollenEncoder.getVoltage();
         double pollenAngle = (pollenVoltage /3.300538)*360.0;
         double pollenError = targetPollenAngle -pollenAngle;
+        telemetry.addData("Pollen error: ", pollenError);
         double pollenErrorChange = pollenError-pollenLastError;
         pollenCurrentEstimate = (pollenA*pollenPreviousEstimate) + (1-pollenA) * pollenErrorChange;
         pollenPreviousEstimate = pollenCurrentEstimate;
@@ -234,21 +236,25 @@ public class main extends OpMode {
             shooterGate.setPosition(shooterCounter%2);
             shooterCounter++;
         }
-        if(gamepad1.left_trigger > 0){
+        if(gamepad2.left_trigger > 0){
             sorter.setPower(1);
             intake.setPower(1);
         }
-        if(gamepad1.right_trigger > 0){
+        if(gamepad2.right_trigger > 0){
             sorter.setPower(-1);
             intake.setPower(-1);
         }
-        if(gamepad1.right_trigger == 0 && gamepad1.left_trigger == 0){
+        if(gamepad2.right_trigger == 0 && gamepad2.left_trigger == 0){
             sorter.setPower(0);
             intake.setPower(0);
         }
         if(gamepad1.bWasPressed()){
             flowerSlope.setPosition(flowerSlopeIndicator%2);
             flowerSlopeIndicator++;
+        }
+        if(gamepad1.rightBumperWasPressed()){
+            follower.setPose(new Pose(8.25, 137, Math.toRadians(0)));
+            follower.update();
         }
 
 

@@ -1,0 +1,221 @@
+package org.firstinspires.ftc.teamcode.opmodes;
+
+import com.pedropathing.follower.Follower;
+import com.pedropathing.math.Pose;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.AnalogInput;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.teamcode.pedro.Constants;
+
+@TeleOp
+public class turretTestingDrive extends OpMode {
+
+
+
+    Pose startPose = new Pose(72, 72 , Math.toRadians(90));
+
+
+    double nectarkP = 0.0071;
+    double nectarkI = 0.0002;
+    double nectarkD = 0;
+    double nectarkFriction = 0.0570;
+    double pollenkP = 0.003;
+    double pollenkI = 0.000;
+    double pollenkD = 0;
+    double pollenkFriction = 0.0450;
+    Servo nectarTurret;
+    AnalogInput nectarEncoder;
+    Servo pollenTurret;
+    AnalogInput pollenEncoder;
+
+
+    double x = 72;
+    double y = 72;
+    double heading = Math.toRadians(90);
+
+
+
+    double pollenX = x + 7.81205*Math.cos(heading + Math.toRadians(140.194429));
+    double pollenY = y + 7.81205*Math.sin(heading + Math.toRadians(140.194429));
+    double nectarX = x + 6.800735*Math.cos(heading + Math.toRadians(216.0273734));
+    double nectarY = y + 6.800735*Math.sin(heading + Math.toRadians(216.0273734));
+
+    double targetX = 57.5;
+    double targetY = 52.5;
+    double nectarIntegralSum = 0;
+    double nectarLastError = 0;
+    double nectarLastAngle = 0;
+    double nectarMaxIntegralSum = 250;
+    double nectarA = 1;
+    double nectarPreviousEstimate = 0;
+    double nectarCurrentEstimate = 0;
+    double pollenIntegralSum = 0;
+    double pollenLastError = 0;
+    double pollenLastAngle = 0;
+    double pollenMaxIntegralSum = 250;
+    double pollenA = 1;
+    double pollenPreviousEstimate = 0;
+    double pollenCurrentEstimate = 0;
+
+    private Follower follower;
+    ElapsedTime timer = new ElapsedTime();
+
+
+    @Override
+    public void init() {
+
+        pollenTurret = hardwareMap.get(Servo.class, "turretPollen");
+        pollenEncoder = hardwareMap.get(AnalogInput.class, "pollenEncoder");
+        nectarTurret = hardwareMap.get(Servo.class, "turretNectar");
+        nectarEncoder = hardwareMap.get(AnalogInput.class, "nectarEncoder");
+        follower = Constants.create(hardwareMap);
+        follower.setPose(startPose);
+        follower.update();
+    }
+
+    @Override
+    public void loop() {
+        Pose robotPose = follower.pose();
+        x = robotPose.x();
+        y = robotPose.y();
+        if(y > 72){
+            targetY = 144-52.5;
+        }
+        if(y <= 72){
+            targetY = 52.5;
+        }
+        heading = robotPose.heading();
+        telemetry.addData("X: ", x);
+        telemetry.addData("Y: ", y);
+        telemetry.addData("Heading: ", heading);
+        double pollenX = x + 7.81205*Math.cos(heading + Math.toRadians(140.194429));
+        double pollenY = y + 7.81205*Math.sin(heading + Math.toRadians(140.194429));
+        double nectarX = x + 6.800735*Math.cos(heading + Math.toRadians(216.0273734));
+        double nectarY = y + 6.800735*Math.sin(heading + Math.toRadians(216.0273734));
+        double nectarXDiff = targetX-nectarX;
+        double nectarYDiff = targetY-nectarY;
+        double nectarToGoalRad = (Math.atan2(nectarYDiff,nectarXDiff)-heading);
+        nectarToGoalRad = (nectarToGoalRad % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+        telemetry.addData("NectarToGoalRad: ", nectarToGoalRad);
+        double targetNectarAngle = (Math.toDegrees(nectarToGoalRad))*-1 + 360;
+        telemetry.addData("target Nectar Angle: ", targetNectarAngle);
+        if(targetNectarAngle < 0){
+            targetNectarAngle +=360;
+        }
+        double nectarVoltage = nectarEncoder.getVoltage();
+        double nectarAngle = (nectarVoltage/3.300538)*360.0;
+        telemetry.addData("nectar angle: ", nectarAngle);
+        double nectarError = targetNectarAngle-nectarAngle;
+        telemetry.addData("Nectar error: ", nectarError);
+        double nectarErrorChange = nectarError-nectarLastError;
+        nectarCurrentEstimate = (nectarA*nectarPreviousEstimate) + (1-nectarA) * nectarErrorChange;
+        nectarPreviousEstimate = nectarCurrentEstimate;
+        double nectarDerivitive = (nectarCurrentEstimate)/ timer.seconds();
+        nectarIntegralSum = nectarIntegralSum+(nectarError* timer.seconds());
+        if(nectarIntegralSum > nectarMaxIntegralSum){
+            nectarIntegralSum = nectarMaxIntegralSum;
+        }
+        if(nectarIntegralSum < -nectarMaxIntegralSum){
+            nectarIntegralSum = -nectarMaxIntegralSum;
+        }
+
+        double nectarOut = (nectarkP*nectarError) + (nectarkI*nectarIntegralSum) + (nectarkD* nectarDerivitive);
+        telemetry.addData("Nectar Out" , nectarOut);
+        if(Math.abs(nectarError) < 3){
+            nectarkFriction = 0;
+        } else {
+            nectarkFriction = 0.057;
+        }
+
+
+        if(nectarOut < 0){
+            nectarOut -= nectarkFriction;
+        }
+        if(nectarOut >= 0){
+            nectarOut += nectarkFriction;
+        }
+
+        if(nectarOut < -0.5){
+            nectarOut = -0.5;
+        }
+        if(nectarOut > 0.5){
+            nectarOut = 0.5;
+        }
+
+        nectarTurret.setPosition(nectarOut +0.5);
+
+        nectarLastError = nectarError;
+        nectarLastAngle = nectarAngle;
+        double pollenXDiff = targetX-pollenX;
+        double pollenYDiff = targetY-pollenY;
+        double pollenToGoalRad = Math.atan2(pollenYDiff, pollenXDiff) - heading;
+        pollenToGoalRad = (pollenToGoalRad % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+        double targetPollenAngle = (Math.toDegrees(pollenToGoalRad))*-1 + 360;
+        if(targetPollenAngle < 0){
+            targetPollenAngle +=360;
+        }
+        double pollenVoltage = pollenEncoder.getVoltage();
+        double pollenAngle = (pollenVoltage /3.300538)*360.0;
+        double pollenError = targetPollenAngle -pollenAngle;
+        telemetry.addData("Pollen error: ", pollenError);
+        double pollenErrorChange = pollenError-pollenLastError;
+        pollenCurrentEstimate = (pollenA*pollenPreviousEstimate) + (1-pollenA) * pollenErrorChange;
+        pollenPreviousEstimate = pollenCurrentEstimate;
+        double pollenDerivitive = (pollenCurrentEstimate)/ timer.seconds();
+        pollenIntegralSum = pollenIntegralSum+(pollenError* timer.seconds());
+        if(pollenIntegralSum > pollenMaxIntegralSum){
+            pollenIntegralSum = pollenMaxIntegralSum;
+        }
+        if(pollenIntegralSum < -pollenMaxIntegralSum){
+            pollenIntegralSum = -pollenMaxIntegralSum;
+        }
+
+        double pollenOut = (pollenkP*pollenError) + (pollenkI*pollenIntegralSum) + (pollenkD* pollenDerivitive);
+        telemetry.addData("pollenOut" , pollenOut);
+        if(Math.abs(pollenError) < 3){
+            pollenkFriction = 0;
+        } else {
+            pollenkFriction = 0.0450;
+        }
+
+
+        if(pollenOut < 0){
+            pollenOut -= pollenkFriction;
+        }
+        if(pollenOut >= 0){
+            pollenOut += pollenkFriction;
+        }
+
+        if(pollenOut < -0.5){
+            pollenOut = -0.5;
+        }
+        if(pollenOut > 0.5){
+            pollenOut = 0.5;
+        }
+
+        pollenTurret.setPosition(pollenOut +0.5);
+
+        pollenLastError = pollenError;
+        pollenLastAngle = pollenAngle;
+        follower.manual(
+                -gamepad1.left_stick_y,
+                -gamepad1.left_stick_x,
+                -gamepad1.right_stick_x
+        );
+        follower.update();
+
+
+        if(gamepad1.rightBumperWasPressed()){
+            follower.setPose(new Pose(8.25, 137, Math.toRadians(0)));
+            follower.update();
+        }
+        timer.reset();
+
+    }
+
+}
